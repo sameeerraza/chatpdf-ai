@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: chatpdf-ai
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd web && python web_main.py --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false

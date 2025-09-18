@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatPDF - Chat with {{ filename }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="header-content">
+                <h2>ChatPDF</h2>
+                <div class="document-info">
+                    <span class="doc-icon">📄</span>
+                    <span class="doc-name">{{ filename }}</span>
+                </div>
+                <button class="new-document-btn" onclick="window.location.href='/'">
+                    New Document
+                </button>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <p>I'm ready to answer questions about <strong>{{ filename }}</strong></p>
+                <p class="help-text">Ask me anything related to the content of this document!</p>
+            </div>
+            
+            {% for message in messages %}
+                {% if message.role == 'user' %}
+                    <div class="message user-message">
+                        <div class="message-content">{{ message.content }}</div>
+                    </div>
+                {% else %}
+                    <div class="message assistant-message">
+                        <div class="message-content">{{ message.content }}</div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <div class="chat-input-section">
+            <div class="input-container">
+                <textarea 
+                    id="messageInput" 
+                    placeholder="Ask a question about the document..." 
+                    rows="1"
+                    maxlength="1000"
+                ></textarea>
+                <button id="sendButton" class="send-btn" disabled>
+                    <span id="sendText">Send</span>
+                    <div class="send-spinner" id="sendSpinner" style="display: none;"></div>
+                </button>
+            </div>
+            <div class="input-info">
+                <span class="char-count" id="charCount">0/1000</span>
+                <span class="help-tip">Press Ctrl+Enter to send</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const sendText = document.getElementById('sendText');
+        const sendSpinner = document.getElementById('sendSpinner');
+        const chatMessages = document.getElementById('chatMessages');
+        const charCount = document.getElementById('charCount');
+        const sessionId = '{{ session_id }}';
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', () => {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+            
+            // Update character count
+            const count = messageInput.value.length;
+            charCount.textContent = `${count}/1000`;
+            
+            // Enable/disable send button
+            sendButton.disabled = messageInput.value.trim().length === 0;
+        });
+
+        // Send message on button click
+        sendButton.addEventListener('click', sendMessage);
+
+        // Send message on Ctrl+Enter
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || sendButton.disabled) return;
+
+            // Add user message to chat
+            addMessageToChat('user', message);
+
+            // Clear input and show loading
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            charCount.textContent = '0/1000';
+            setLoadingState(true);
+
+            try {
+                const formData = new FormData();
+                formData.append('message', message);
+
+                const response = await fetch(`/chat/${sessionId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Add assistant response to chat
+                    addMessageToChat('assistant', result.response);
+                } else {
+                    addMessageToChat('assistant', 'Sorry, I encountered an error. Please try again.');
+                }
+            } catch (error) {
+                addMessageToChat('assistant', 'Network error. Please check your connection and try again.');
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        function addMessageToChat(role, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}-message`;
+            
+            if (role === 'assistant') {
+                messageDiv.innerHTML = `<div class="message-content typing">${content}</div>`;
+                
+                // Add typing effect
+                setTimeout(() => {
+                    messageDiv.querySelector('.message-content').classList.remove('typing');
+                }, 100);
+            } else {
+                messageDiv.innerHTML = `<div class="message-content">${content}</div>`;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function setLoadingState(loading) {
+            sendButton.disabled = loading || messageInput.value.trim().length === 0;
+            
+            if (loading) {
+                sendText.style.display = 'none';
+                sendSpinner.style.display = 'inline-block';
+                messageInput.disabled = true;
+            } else {
+                sendText.style.display = 'inline';
+                sendSpinner.style.display = 'none';
+                messageInput.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        // Focus on input when page loads
+        window.addEventListener('load', () => {
+            messageInput.focus();
+            
+            // Scroll to bottom if there are existing messages
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+
+        // Clean up session when leaving page
+        window.addEventListener('beforeunload', () => {
+            fetch(`/session/${sessionId}`, { method: 'DELETE' }).catch(() => {});
+        });
+    </script>
+</body>
+</html>

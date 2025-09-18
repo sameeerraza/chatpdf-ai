@@ -1,0 +1,31 @@
+chatPDF/
+├── src/                          # Source code
+│   ├── __init__.py
+│   ├── pdf/                      # PDF processing modules
+│   │   ├── __init__.py
+│   │   ├── extractor.py
+│   │   └── scoring.py
+│   ├── chat/                     # Chat functionality
+│   │   ├── __init__.py
+│   │   └── gemini_setup.py
+│   └── utils/                    # Utilities
+│       ├── __init__.py
+│       ├── config.py             # renamed from utils.py
+│       └── logging_config.py
+├── web/                          # Web interface
+│   ├── templates/
+│   │   ├── index.html
+│   │   └── chat.html
+│   ├── static/
+│   │   └── style.css
+│   └── web_main.py
+├── cli/                          # CLI interface
+│   └── main.py
+├── data/                         # Data directories
+│   ├── uploads/
+│   └── logs/
+├── config/
+│   └── .env
+├── requirements.txt
+├── README.md
+└── .gitignore

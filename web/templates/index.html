@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatPDF - Upload Document</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="upload-section">
+            <h1>ChatPDF</h1>
+            <p class="subtitle">Upload a PDF document to start chatting</p>
+            
+            <div class="upload-form">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-content">
+                        <div class="upload-icon">📄</div>
+                        <p>Drop your PDF here or <span class="browse-text">browse files</span></p>
+                        <p class="file-info">Maximum file size: 10MB</p>
+                    </div>
+                    <input type="file" id="fileInput" accept=".pdf" hidden>
+                </div>
+                
+                <div class="selected-file" id="selectedFile" style="display: none;">
+                    <div class="file-preview">
+                        <span class="file-name" id="fileName"></span>
+                        <button class="remove-file" id="removeFile">✕</button>
+                    </div>
+                </div>
+                
+                <button class="upload-btn" id="uploadBtn" disabled>
+                    <span id="uploadText">Select a PDF file</span>
+                    <div class="spinner" id="spinner" style="display: none;"></div>
+                </button>
+            </div>
+            
+            <div class="error-message" id="errorMessage" style="display: none;"></div>
+            <div class="success-message" id="successMessage" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadText = document.getElementById('uploadText');
+        const spinner = document.getElementById('spinner');
+        const selectedFile = document.getElementById('selectedFile');
+        const fileName = document.getElementById('fileName');
+        const removeFile = document.getElementById('removeFile');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        let selectedPdfFile = null;
+
+        // Drop zone events
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelection(files[0]);
+            }
+        });
+
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelection(e.target.files[0]);
+            }
+        });
+
+        removeFile.addEventListener('click', (e) => {
+            e.stopPropagation();
+            clearFileSelection();
+        });
+
+        function handleFileSelection(file) {
+            hideMessages();
+            
+            // Validate file type
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                showError('Please select a PDF file');
+                return;
+            }
+
+            // Validate file size
+            if (file.size > 10 * 1024 * 1024) {
+                showError('File size exceeds 10MB limit');
+                return;
+            }
+
+            selectedPdfFile = file;
+            fileName.textContent = file.name;
+            selectedFile.style.display = 'block';
+            dropZone.style.display = 'none';
+            uploadBtn.disabled = false;
+            uploadText.textContent = 'Process PDF';
+        }
+
+        function clearFileSelection() {
+            selectedPdfFile = null;
+            selectedFile.style.display = 'none';
+            dropZone.style.display = 'flex';
+            uploadBtn.disabled = true;
+            uploadText.textContent = 'Select a PDF file';
+            fileInput.value = '';
+            hideMessages();
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+        }
+
+        // Upload functionality
+        uploadBtn.addEventListener('click', async () => {
+            if (!selectedPdfFile) return;
+
+            // Show loading state
+            uploadBtn.disabled = true;
+            uploadText.textContent = 'Processing...';
+            spinner.style.display = 'inline-block';
+            hideMessages();
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedPdfFile);
+
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('PDF processed successfully! Redirecting to chat...');
+                    setTimeout(() => {
+                        window.location.href = result.redirect_url;
+                    }, 1000);
+                } else {
+                    showError(result.detail || 'Upload failed');
+                    resetUploadButton();
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+                resetUploadButton();
+            }
+        });
+
+        function resetUploadButton() {
+            uploadBtn.disabled = false;
+            uploadText.textContent = 'Process PDF';
+            spinner.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
