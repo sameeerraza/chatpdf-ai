@@ -3,8 +3,9 @@
 An intelligent PDF chat application that allows you to have natural conversations with your PDF documents. Upload any PDF and ask questions about its content using the power of Google's Gemini AI through OpenAI's API interface.
 
 ## 🌐 Live Demo
-Try it now: https://chatpdf-ai-dcvo.onrender.com/
-Upload any PDF and start chatting with your document instantly!
+**Try it now**: https://chatpdf-ai-dcvo.onrender.com/
+
+**Upload any PDF and start chatting with your document instantly!**
 
 ## ✨ Features
 
