@@ -5,7 +5,7 @@ from typing import List, Dict
 import logging
 
 class ChatClient:
-    def __init__(self, model: str = "gemini-1.5-flash", max_history: int = 20):
+    def __init__(self, model: str = "gemini-2.5-flash", max_history: int = 20):
         load_dotenv(dotenv_path="../config/.env")
         
         api_key = os.getenv("GEMINI_API_KEY")
