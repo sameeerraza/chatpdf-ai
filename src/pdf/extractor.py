@@ -1,5 +1,6 @@
 import pdfplumber
 import pytesseract
+pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 from PIL import Image
 from pathlib import Path
 from typing import Optional
